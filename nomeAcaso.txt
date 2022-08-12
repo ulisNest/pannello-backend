@@ -1,0 +1,2 @@
+
+c:\Users\Astolfo\Desktop\appSvelte\pannello-backend>echo "ciao"  1>nomeAcaso.pdf 
