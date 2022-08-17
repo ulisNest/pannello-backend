@@ -17,10 +17,10 @@ app.get('/pannello-start',(req, res) => {
   let { pws } = req.query;
   let pidServer;
   let esitoRichiesta;
-  exec("pgrep ping", (exeption, stdout, sterr) => {
+  const test = exec("pgrep ping", (exeption, stdout, sterr) => {
     pidServer = stdout;
     console.log("pidServer: ", stdout);
-
+    
     if (pidServer.length === 0) {
       console.log("nn esiste, creando Processo");
       exec("sh start.sh");
@@ -100,14 +100,18 @@ app.get('/pannello-kill', (req, res) => {
   });
 });
 //GESTIONE SOCKET ---------------------
+let count = 0;
 io.on("connection", socket => {
-  
+  socket.on('chat-msg', (msg) => {
+    console.log("from the server - helo");
+    io.emit('chat-msg', {"msg":"Respect+"+count++});
+  });
   console.log('a user connected:');
   console.log(socket.id);
 });
 
 app.get('/pannello-update-log', (req, res) => {
-  res.send('Hello World!')
+  console.log("inside pannello");
 });
 server.listen(port, () => {
   console.log(`app listening on port ${port}`)

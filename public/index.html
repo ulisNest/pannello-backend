@@ -1,18 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
 </head>
-<body>
-    RESPECT+
+
+<body id="body">
+
+    <button id="respect">
+        Respect+
+    </button>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const sock = io("http://localhost:3000");
-        
+        const socket = io("http://localhost:3000");
+
+        const button = document.getElementById('respect');
+        const body = document.getElementById('body');
+        console.log("but: ",button,"body: ",body, "HELO");
+        button.addEventListener('click', function (e){
+            console.log("bottone premuto");
+            socket.emit('chat-msg', "val");
+        });
+
+        socket.on('chat-msg', function (msg) {
+            console.log("chat msg client fired");
+            console.log(msg.msg);
+            let item = document.createElement('span');
+            item.textContent = msg.msg;
+            body.appendChild(item);
+        });
     </script>
 </body>
+
 </html>
