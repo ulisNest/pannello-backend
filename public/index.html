@@ -26,10 +26,10 @@
             socket.emit('chat-msg', "val");
         });
 
-        socket.on('chat-msg', function (msg) {
-            console.log("chat msg client fired");
+        socket.on('logMsg', function (msg) {
+            console.log("log arrivato");
             console.log(msg.msg);
-            let item = document.createElement('span');
+            let item = document.createElement('p');
             item.textContent = msg.msg;
             body.appendChild(item);
         });

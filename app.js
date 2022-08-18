@@ -5,25 +5,39 @@ const port = 3000;
 //fetch API
 const fetch = require("node-fetch");
 //Eseguire comandi shell
-const { exec, execSync } = require('child_process');
-const { readFile } = require('fs');
+const { exec, spawn } = require('child_process');
+const fs = require('fs');
+const { on } = require('events');
 
+// const readStream = fs.createReadStream('log.txt');
+// console.log(readStream.on('data', function (chunk) {
+//   console.log("NUOVO CHUNK");
+//   console.log(chunk);
+// }));
 //Connessione persistente con websockets
+const passwd = 'orologioInvertito';
 const io = require("socket.io")(server);
 app.get('/', (req, res) => {
   res.sendFile(`${__dirname}/public/index.html`);
 });
-app.get('/pannello-start',(req, res) => {
+app.get('/pannello-start', (req, res) => {
   let { pws } = req.query;
   let pidServer;
   let esitoRichiesta;
-  const test = exec("pgrep ping", (exeption, stdout, sterr) => {
+  //Controls whether the process already exists
+  exec("pgrep ping", (exeption, stdout, sterr) => {
     pidServer = stdout;
     console.log("pidServer: ", stdout);
-    
     if (pidServer.length === 0) {
-      console.log("nn esiste, creando Processo");
-      exec("sh start.sh");
+      console.log("non esiste, creando Processo");
+
+      let child = spawn("sh",['start.sh']);
+      child.stdout.setEncoding('utf-8');
+      child.stdout.on('data', (chunk) => {
+        console.log(chunk);
+        io.emit('logMsg', {"msg":chunk});
+      });
+      
       esitoRichiesta = true;
     }
     else {
@@ -36,6 +50,7 @@ app.get('/pannello-start',(req, res) => {
 app.get('/pannello-stop', (req, res) => {
   // 1 verifichiamo se esiste != 0 -> 2. procediamo con lo stop
   let { pws } = req.query;
+  
   let pidPing;
   //esito da restituire in formato json e.e
   let esitoRichiesta;
@@ -101,15 +116,15 @@ app.get('/pannello-kill', (req, res) => {
 });
 //GESTIONE SOCKET ---------------------
 let count = 0;
+
 io.on("connection", socket => {
   socket.on('chat-msg', (msg) => {
     console.log("from the server - helo");
-    io.emit('chat-msg', {"msg":"Respect+"+count++});
+    io.emit('logMsg', { "msg": "Respect+" + count++ });
   });
   console.log('a user connected:');
   console.log(socket.id);
 });
-
 app.get('/pannello-update-log', (req, res) => {
   console.log("inside pannello");
 });
