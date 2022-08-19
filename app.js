@@ -7,18 +7,13 @@ const fetch = require("node-fetch");
 //Eseguire comandi shell
 const { exec, spawn } = require('child_process');
 const fs = require('fs');
-const { on } = require('events');
 
-// const readStream = fs.createReadStream('log.txt');
-// console.log(readStream.on('data', function (chunk) {
-//   console.log("NUOVO CHUNK");
-//   console.log(chunk);
-// }));
 //Connessione persistente con websockets
 const passwd = 'orologioInvertito';
 const io = require("socket.io")(server);
+app.use(express.static("client/dist"))
 app.get('/', (req, res) => {
-  res.sendFile(`${__dirname}/public/index.html`);
+  res.sendFile(`${__dirname}/client/dist/index.html`);
 });
 app.get('/pannello-start', (req, res) => {
   let { pws } = req.query;
