@@ -1,22 +1,44 @@
+require('dotenv').config();
 const express = require('express');
 const app = express();
 const server = require('http').createServer(app);
 const port = 3000;
-//fetch API
+//fetch API & body parser API
 const fetch = require("node-fetch");
 //Eseguire comandi shell
 const { exec, spawn } = require('child_process');
-const fs = require('fs');
-
 //Connessione persistente con websockets
-const passwd = 'orologioInvertito';
 const io = require("socket.io")(server);
-app.use(express.static("client/dist"))
-app.get('/', (req, res) => {
-  res.sendFile(`${__dirname}/client/dist/index.html`);
+
+app.use(express.static(`${__dirname}/client/dist/assets`));
+app.use((express.urlencoded({})));
+app.use(express.json());
+//TODO 
+  //se stringa vuota restituisci pagbase
+  // se stringa piena controlla pws
+  // se giusta res-> pannello, res-> errorePass altrimenti
+
+app.post('/', (req, res) => {
+
+  let {pws} = req.body;
+  console.log("richiesta - psw: ", pws );
+  console.log(process.env.PASSWORD);
+  if (pws === "") res.sendFile(`${__dirname}/serverPublic/auth.html`);
+  if (pws === process.env.PASSWORD){
+   res.sendFile(`${__dirname}/client/dist/index.html`);
+  }
+  if (pws != process.env.PASSWORD) res.sendFile(`${__dirname}/serverPublic/errorePass.html`);
 });
+
+app.get('/', (req, res) => {
+  res.sendFile(`${__dirname}/serverPublic/auth.html`);
+});
+
+
 app.get('/pannello-start', (req, res) => {
   let { pws } = req.query;
+  if(pws != process.env.PASSWORD) res.sendFile(`${__dirname}/serverPublic/errorePass.html`);
+  
   let pidServer;
   let esitoRichiesta;
   //Controls whether the process already exists
@@ -29,7 +51,7 @@ app.get('/pannello-start', (req, res) => {
       let child = spawn("sh",['start.sh']);
       child.stdout.setEncoding('utf-8');
       child.stdout.on('data', (chunk) => {
-        console.log(chunk);
+       // console.log(chunk);
         io.emit('logMsg', {"msg":chunk});
       });
       
@@ -43,8 +65,8 @@ app.get('/pannello-start', (req, res) => {
   });
 });
 app.get('/pannello-stop', (req, res) => {
-  // 1 verifichiamo se esiste != 0 -> 2. procediamo con lo stop
   let { pws } = req.query;
+  if(pws != process.env.PASSWORD) res.sendFile(`${__dirname}/serverPublic/errorePass.html`);
   
   let pidPing;
   //esito da restituire in formato json e.e
@@ -61,11 +83,12 @@ app.get('/pannello-stop', (req, res) => {
       exec(`sh stop.sh ${pidPing}`);
       esitoRichiesta = true;
     }
-
     res.json({ "esito": esitoRichiesta });
   });
 });
 app.get('/pannello-restart', (req, res) => {
+  let { pws } = req.query;
+  if(pws != process.env.PASSWORD) res.sendFile(`${__dirname}/serverPublic/errorePass.html`);
 
   console.log("before stop: ",
     exec("pgrep ping", (exeption, stdout, sterr) => console.log(stdout.pid))
@@ -91,6 +114,8 @@ app.get('/pannello-restart', (req, res) => {
 app.get('/pannello-kill', (req, res) => {
   // 1 verifichiamo se esiste != 0 -> 2. procediamo con lo stop
   let { pws } = req.query;
+  if(pws != process.env.PASSWORD) res.sendFile(`${__dirname}/serverPublic/errorePass.html`);
+
   let pidPing;
   //esito da restituire in formato json e.e
   let esitoRichiesta;
@@ -99,30 +124,23 @@ app.get('/pannello-kill', (req, res) => {
 
     if (pidPing.length === 0) {
       console.log("processo non esiste!");
-      esitoRichiesta = "MissionFailed";
+      esitoRichiesta = false;
     }
     else {
       console.log("uccidendo il processo");
       exec(`sh kill.sh ${pidPing}`);
-      esitoRichiesta = "Respect+";
+      esitoRichiesta = true;
     }
     res.json({ "esito": esitoRichiesta });
   });
 });
-//GESTIONE SOCKET ---------------------
-let count = 0;
+//GESTIONE SOCKET ------------ GESTION SERVER
 
 io.on("connection", socket => {
-  socket.on('chat-msg', (msg) => {
-    console.log("from the server - helo");
-    io.emit('logMsg', { "msg": "Respect+" + count++ });
-  });
   console.log('a user connected:');
   console.log(socket.id);
 });
-app.get('/pannello-update-log', (req, res) => {
-  console.log("inside pannello");
-});
+
 server.listen(port, () => {
   console.log(`app listening on port ${port}`)
 });
